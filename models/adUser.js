@@ -1,3 +1,4 @@
+var moment = require('moment');
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
 
@@ -6,9 +7,8 @@ var adUserSchema = new Schema({
     "viewed_articles"          : [{
         "article_id" : {type : Schema.ObjectId, ref : 'adArticles'}
     }],
-    "last_view"        : {type : Date, default : Date.now},
-    "last_visit_day"   : {type : Number, default : 0},
-    "last_visit_hours" : {type : Number, default : 0},
+    "last_view"        : {type : Date, default : moment().format()},
+    "last_visit"       : {type : String, default : moment().format()},
     "total_views"      : {type : Number, default : 0},
     "daily_views"      : {type : Number, default : 0}
 

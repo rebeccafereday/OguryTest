@@ -1,7 +1,10 @@
+_          = require("underscore")
+moment     = require("underscore")
+
 express    = require("express")
 mongoose   = require("mongoose")
 bodyParser = require("body-parser")
-_          = require("underscore")
+
 User       = require("../models/adUser.js")
 Advert    = require("../models/adAdvert.js")
 
@@ -57,12 +60,9 @@ router.post "/user", (req, res) ->
 
 router.get "/add/:id", (req, res) ->
   userID = req.params.id
-  date   = new Date()
 
-  ##Getting date format in days and hours
-  day            = Math.floor date.getTime()/86400000
-  hour           = Math.floor date.getTime()/3600000
-  four           = hour - 4
+  now = moment()
+  four = moment().add(4, 'hours')
 
   ##Finding the user matching the id passed in the query
   User.findOne _id : userID, (findUserErr, findUserRes) ->
@@ -75,7 +75,9 @@ router.get "/add/:id", (req, res) ->
     else if findUserRes?
 
       ##Check whether the user has seen an article in the last 4 hours, checking whether they have seen ten articles in total and whether they have seen three articles today.
-      if findUserRes.last_visit_hours < four  and findUserRes.total_views < 10 and (findUserRes.last_visit_day is day and findUserRes.daily_views < 3 or findUserRes.last_visit_day < day)
+      if now.isBefore(four)  and findUserRes.total_views < 10 and 
+      ((moment(findUserRes.last_visit).isSame(now, 'days') and findUserRes.daily_views < 3) or 
+      !moment(findUserRes.last_visit).isSame(now, 'days'))
 
         ##If the user is eligible to view an advert all articles not yet been viewed by the user are returned
         Advert.find _id : $nin : findUserRes.viewed_articles, (findAdvertErr, findAdvertRes) ->
@@ -93,9 +95,11 @@ router.get "/add/:id", (req, res) ->
             advert = findAdvertRes[rand]
 
             ##The user's details are updated
-            findUserRes.daily_views = if findUserRes.last_visit_day is day then findUserRes.daily_views + 1 else 1
-            findUserRes.last_visit_day = day
-            findUserRes.last_visit_hours = hour
+            if findUserRes.last_visit).isSame(now, 'days')
+              findUserRes.daily_views = 1
+            else
+              findUserRes.daily_views++
+            findUserRes.last_visit = now.format()
             findUserRes.total_views++
             findUserRes.viewed_articles.push advert._id
 
